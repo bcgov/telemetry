@@ -20,7 +20,9 @@ If you have bcgovr installed and you use RStudio, click the 'Insert BCDevex Badg
 
 ### Usage
 
-Describe data being used (links), and how to run. Eg:
+This repo is a place to store various scripts to analyse telemetry data. It is currently a work in progress to enable collaboration on scripting. 
+
+
 
 There are four core scripts that are required for the analysis, they need to be run in order:
 
