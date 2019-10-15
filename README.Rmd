@@ -12,34 +12,24 @@ knitr::opts_chunk$set(
 )
 ```
 
-<!-- Add a project state badge
-See https://github.com/BCDevExchange/Our-Project-Docs/blob/master/discussion/projectstates.md
-If you have bcgovr installed and you use RStudio, click the 'Insert BCDevex Badge' Addin. -->
+<a id="devex-badge" rel="Exploration" href="https://github.com/BCDevExchange/assets/blob/master/README.md"><img alt="Being designed and built, but in the lab. May change, disappear, or be buggy." style="border-width:0" src="https://assets.bcdevexchange.org/images/badges/exploration.svg" title="Being designed and built, but in the lab. May change, disappear, or be buggy." /></a> 
 
 # telemetry
 
 ### Usage
 
-This repo is a place to store various scripts to analyse telemetry data. It is currently a work in progress to enable collaboration on scripting. 
+This repo is a place to store various scripts to analyse and visualise telemetry data. It is currently a work in progress to enable collaboration on scripting.
+
+The scripts are currently stored by analysis theme
+
+- home_range_analysis (KDE)
+- data_visualisation (animation, leaflet mapping)
+- movement_analysis (mortality)
 
 
+There are several other repos which include telemetry developed by the ministry to support larger projects. These include [clus](https://github.com/bcgov/clus) and [sk_tda](https://github.com/bcgov/sk_tda). 
 
-There are four core scripts that are required for the analysis, they need to be run in order:
 
-- 01_clean.R
-- 02_analysis.R
-- 03_visualize.R
-- 04_output.R
-
-#### Example
-
-This is a basic example which shows you how to solve a common problem:
-
-```{r example}
-## basic example code
-```
-
-### Project Status
 
 ### Getting Help or Reporting an Issue
 

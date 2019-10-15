@@ -1,32 +1,25 @@
-<!-- Add a project state badge
-See https://github.com/BCDevExchange/Our-Project-Docs/blob/master/discussion/projectstates.md
-If you have bcgovr installed and you use RStudio, click the 'Insert BCDevex Badge' Addin. -->
+<a id="devex-badge" rel="Exploration" href="https://github.com/BCDevExchange/assets/blob/master/README.md"><img alt="Being designed and built, but in the lab. May change, disappear, or be buggy." style="border-width:0" src="https://assets.bcdevexchange.org/images/badges/exploration.svg" title="Being designed and built, but in the lab. May change, disappear, or be buggy." /></a>
+
 
 telemetry
 =========
 
 ### Usage
 
-This repo is a place to store various scripts to analyse telemetry data.
-It is currently a work in progress to enable collaboration on scripting.
+This repo is a place to store various scripts to analyse and visualise
+telemetry data. It is currently a work in progress to enable
+collaboration on scripting.
 
-There are four core scripts that are required for the analysis, they
-need to be run in order:
+The scripts are currently stored by analysis theme
 
--   01\_clean.R
--   02\_analysis.R
--   03\_visualize.R
--   04\_output.R
+-   home\_range\_analysis (KDE)
+-   data\_visualisation (animation, leaflet mapping)
+-   movement\_analysis (mortality)
 
-#### Example
-
-This is a basic example which shows you how to solve a common problem:
-
-``` r
-## basic example code
-```
-
-### Project Status
+There are several other repos which include telemetry developed by the
+ministry to support larger projects. These include
+[clus](https://github.com/bcgov/clus) and
+[sk\_tda](https://github.com/bcgov/sk_tda).
 
 ### Getting Help or Reporting an Issue
 
