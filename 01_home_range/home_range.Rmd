@@ -1,0 +1,29 @@
+---
+title: "Home_Range"
+author: "Tyler Muhly"
+date: "16/10/2019"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Here is a jh
+
+## Load Data
+
+sf packagae ; as shapefile, coudl be a gdb ordb (e.g, postgres)
+
+
+```{r, load the data}
+
+
+"C:\\Work\\git\\telemetry\\telemetry\\01_home_range\\sample_data\\sample_animal_locations.shp"
+
+
+
+```
+
