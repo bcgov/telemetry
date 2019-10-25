@@ -10,18 +10,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Introduction
-
-Here is a jh
+Here is is a method for 
 
 ## Load Data
 
-sf packagae ; as shapefile, coudl be a gdb ordb (e.g, postgres)
+sf packagae ; as shapefile, coudl be a gdb or db (e.g, postgres)
 
 
 ```{r, load the data}
+require (sf)
+require (here)
 
-
-"C:\\Work\\git\\telemetry\\telemetry\\01_home_range\\sample_data\\sample_animal_locations.shp"
+data <- st_read (here ("\\04_example_data\\sample_animal_location_data.shp"))
 
 
 
