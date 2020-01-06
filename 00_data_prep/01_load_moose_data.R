@@ -30,11 +30,11 @@ import_sheets <- function(sheetname, year){
   }
 
 
-mdata.13 <- import_sheets("2013-14", 2013)
-mdata.14 <- import_sheets("2014-15", 2014)
-mdata.15 <- import_sheets("2015-16", 2015)
-mdata.16 <- import_sheets("2016-17", 2016)
-mdata.17 <- import_sheets("2017-18", 2018)
+mdata.13 <- import_sheets("2013-14", 201314)
+mdata.14 <- import_sheets("2014-15", 201415)
+mdata.15 <- import_sheets("2015-16", 201516)
+mdata.16 <- import_sheets("2016-17", 201617)
+mdata.17 <- import_sheets("2017-18", 201718)
 
 
 moose <- bind_rows(mdata.13, mdata.14, mdata.15, mdata.16, mdata.17)
