@@ -47,7 +47,7 @@ ggplot(moose, aes(Y,X)) +
   geom_point() +
   facet_wrap(~year)
 
-# remove outliers # largely in 2018.
+# remove outliers # largely in 2018. # some change in notes
 moose <- moose %>%
   filter(X < 53.75)
 
