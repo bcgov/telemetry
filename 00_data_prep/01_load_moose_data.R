@@ -60,7 +60,7 @@ proj4string(moose.sp) <- CRS("+proj=longlat +datum=WGS84 +units=m +no_defs" )
 moose.sp <- spTransform(moose.sp, CRS("+init=epsg:3005")) # Transform to UTM
 
 # check moose distribution
-#mapview::mapview(mgeo)
+#mapview::mapview(moose.sp)
 
 # Calculate MCPs for each year
 moose.mcp <- mcp(moose.sp, percent = 100)
