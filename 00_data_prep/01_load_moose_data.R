@@ -85,7 +85,7 @@ st_write(moose.mcp.95, file.path("out", "mmcp95.shp"))
 plot(moose.mcp)
 
 
-#  Moose Data Check 2020 --------------------------------------------------
+# Part 2:  Moose Data Check 2020 --------------------------------------------------
 
 library(dplyr)
 library(readxl)
@@ -146,3 +146,56 @@ data_path <- file.path("data")
 
 
   write.csv(moose, file.path("data", "moose_2020.csv"))
+
+
+
+# Part 3 Date format  ------------------------------------------------------------
+
+
+  library(dplyr)
+  library(readxl)
+  library(ggplot2)
+  library(lubridate)
+  library(stringr)
+
+  data_path <- file.path("data")
+
+
+  data_path <- "I:/ES/General/Wildlife/WILDLIFE SPECIES/Moose/Telemetry/PMU Tweedsmuir/Entiako-Tweedsmuir Study Area/Collars/Data Request compilation/2014-2015/Date correction/"
+  list.files(data_path)
+
+
+  # import date
+  mdata.0 <- read.csv(file.path(data_path, "GPS_Collar14434_20180525100523.csv"))
+
+  # convert date to dmy
+  x <- mdata.0 %>%
+    #mutate(day = str_split_n(LMT_Date, "/", 1))
+   mutate(day =  unlist(strsplit(as.character(LMT_Date),"/"))[[1]],
+          month = unlist(strsplit(as.character(LMT_Date),"/"))[[2]],
+          year = unlist(strsplit(as.character(LMT_Date),"/"))[[3]])
+
+
+
+
+
+
+
+  as.POSIXlt(mdata.0$LMT_Date, format = "%e/%m/%Y")
+
+   format(mdata.0$LMT_Date, "%e/%m/%Y")
+
+
+as.Date(mdata.0$LMT_Date, format = '%D/%m/%Y')
+
+  #head(twdata)
+
+  ##############################################################
+  #### PART 1: DATA EXPLORATION #####
+  twdata$Date2=as.Date(twdata$Date.Time, format = '%Y-%m-%d')
+  twdata$Year<- year(twdata$Date2)
+  twdata$Month <- month(twdata$Date2) # break out DMY columns
+  twdata$Day <- day(twdata$Date2)
+  twdata$Date.j <- julian(twdata$Date2)#Add julian day
+  twdata$Hours <- as.numeric(format(as.POSIXct(strptime(twdata$Date.Time,"%Y-%m-%d %H:%M",tz="")) ,format = "%H"))
+
