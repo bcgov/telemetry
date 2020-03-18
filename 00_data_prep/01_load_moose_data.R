@@ -85,3 +85,65 @@ st_write(moose.mcp.95, file.path("out", "mmcp95.shp"))
 plot(moose.mcp)
 
 
+#  Moose Data Check 2020 --------------------------------------------------
+
+library(dplyr)
+library(readxl)
+library(adehabitatHR)
+library(sp)
+library(ggplot2)
+library(sf)
+library(plotKML)
+
+data_path <- file.path("data")
+
+# import data
+  mdata.0 <- read_xlsx(file.path(data_path, "Copy of 2018 - 2019 Compiled Data.xlsx"),
+                      sheet = "Cleaned")
+
+  moose <- rename(mdata.0, X = `Latitude [°]`, Y =`Longitude [°]` ) %>%
+    mutate(id = case_when(
+      CollarID == 14446 ~ "Ent131401",
+      CollarID == 17770 ~ "Breeding Birds",
+      CollarID == 19795 ~ "Freshwater Fish",
+      CollarID == 19822 ~ "Mammals",
+      CollarID == 20211 ~ "Reptiles and Turtles",
+      CollarID == 20219 ~ "Freshwater Fish",
+      CollarID == 24445 ~ "Mammals",
+      CollarID == 24447 ~ "Reptiles and Turtles",
+      CollarID == 24448 ~ "Mammals",
+      CollarID == 29374 ~ "Reptiles and Turtles",
+
+
+    ))
+
+  # check the distribution of points
+  ggplot(moose, aes(Y, X)) +
+    geom_point()
+
+  ggplot(moose, aes(Y,X)) +
+    geom_point() +
+    facet_wrap(~CollarID)
+
+
+  # Create a SpatialPointsDataFrame by defining the coordinates
+  moose.sp <- moose[, c("X", "Y", "CollarID")]
+  coordinates(moose.sp) <- c("Y", "X")
+  proj4string(moose.sp) <- CRS("+proj=longlat +datum=WGS84 +units=m +no_defs" )
+  mapview::mapview(moose.sf)
+
+
+  moose.sf <- spTransform(moose.sp, CRS("+init=epsg:3005")) # Transform to UTM
+  mapview::mapview(moose.sf)
+
+#  output a kml for easy investigation
+  plotKML::kml(moose.sp,
+               file.name    = "moose2020.kml",
+               points_names = moose$CollarID,
+               colour    = "#FF0000",
+               alpha     = 0.6,
+               size      = 1,
+               shape     = "http://maps.google.com/mapfiles/kml/pal2/icon18.png")
+
+
+]
