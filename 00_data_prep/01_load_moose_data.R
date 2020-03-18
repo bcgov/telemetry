@@ -103,18 +103,16 @@ data_path <- file.path("data")
 
   moose <- rename(mdata.0, X = `Latitude [°]`, Y =`Longitude [°]` ) %>%
     mutate(id = case_when(
-      CollarID == 14446 ~ "Ent131401",
-      CollarID == 17770 ~ "Breeding Birds",
-      CollarID == 19795 ~ "Freshwater Fish",
-      CollarID == 19822 ~ "Mammals",
-      CollarID == 20211 ~ "Reptiles and Turtles",
-      CollarID == 20219 ~ "Freshwater Fish",
-      CollarID == 24445 ~ "Mammals",
-      CollarID == 24447 ~ "Reptiles and Turtles",
-      CollarID == 24448 ~ "Mammals",
-      CollarID == 29374 ~ "Reptiles and Turtles",
-
-
+      CollarID == 14446 ~ "ENT131401",
+      CollarID == 17770 ~ "ENT131402",
+      CollarID == 19795 ~ "ENT131403",
+      CollarID == 19822 ~ "ENT131404",
+      CollarID == 20211 ~ "ENT131405",
+      CollarID == 20219 ~ "ENT131406",
+      CollarID == 24445 ~ "ENT131407",
+      CollarID == 24447 ~ "ENT131408",
+      CollarID == 24448 ~ "ENT131409",
+      CollarID == 29374 ~ "ENT131410",
     ))
 
   # check the distribution of points
@@ -146,4 +144,5 @@ data_path <- file.path("data")
                shape     = "http://maps.google.com/mapfiles/kml/pal2/icon18.png")
 
 
-]
+
+  write.csv(moose, file.path("data", "moose_2020.csv"))
