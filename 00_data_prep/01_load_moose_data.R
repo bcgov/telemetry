@@ -171,19 +171,19 @@ data_path <- file.path("data")
   # convert date to dmy
   x <- mdata.0 %>%
     #mutate(day = str_split_n(LMT_Date, "/", 1))
+    mutate()
+
+
    mutate(day =  unlist(strsplit(as.character(LMT_Date),"/"))[[1]],
           month = unlist(strsplit(as.character(LMT_Date),"/"))[[2]],
           year = unlist(strsplit(as.character(LMT_Date),"/"))[[3]])
 
 
+  as.POSIXlt(mdata.0$LMT_Date, format = "%m/%d/%Y")
 
+  as_date(
 
-
-
-
-  as.POSIXlt(mdata.0$LMT_Date, format = "%e/%m/%Y")
-
-   format(mdata.0$LMT_Date, "%e/%m/%Y")
+   format(mdata.0$LMT_Date, "%m/%d/%Y")
 
 
 as.Date(mdata.0$LMT_Date, format = '%D/%m/%Y')
