@@ -151,6 +151,10 @@ data_path <- file.path("data")
 
 # Part 3 Date format  ------------------------------------------------------------
 
+  # Run this part of the script to fix date format, add day, month, year columns and consolidate the files into a single
+  # xlsx file which is written out
+
+
 
   library(dplyr)
   library(readxl)
@@ -160,42 +164,25 @@ data_path <- file.path("data")
 
   data_path <- file.path("data")
 
-
   data_path <- "I:/ES/General/Wildlife/WILDLIFE SPECIES/Moose/Telemetry/PMU Tweedsmuir/Entiako-Tweedsmuir Study Area/Collars/Data Request compilation/2014-2015/Date correction/"
-  list.files(data_path)
 
+  gps.files <- list.files(file.path(data_path))
+  gps.files <- as.list(gps.files[str_detect(gps.files, "GPS_")] )
+
+  mdata.out <- lapply(gps.files, function(x){
 
   # import date
-  mdata.0 <- read.csv(file.path(data_path, "GPS_Collar14434_20180525100523.csv"))
+  mdata.0 <- read.csv(file.path(data_path, x))
 
   # convert date to dmy
-  x <- mdata.0 %>%
-    #mutate(day = str_split_n(LMT_Date, "/", 1))
-    mutate()
+  mdata.0 %>%
+    mutate(date =  as.POSIXct(LMT_Date, format = "%m/%d/%Y"),
+           year = year(date),
+           month = month(date),
+           day = day(date))
+  })
 
 
-   mutate(day =  unlist(strsplit(as.character(LMT_Date),"/"))[[1]],
-          month = unlist(strsplit(as.character(LMT_Date),"/"))[[2]],
-          year = unlist(strsplit(as.character(LMT_Date),"/"))[[3]])
+  mdata.out  <- do.call("rbind", mdata.out )
 
-
-  as.POSIXlt(mdata.0$LMT_Date, format = "%m/%d/%Y")
-
-  as_date(
-
-   format(mdata.0$LMT_Date, "%m/%d/%Y")
-
-
-as.Date(mdata.0$LMT_Date, format = '%D/%m/%Y')
-
-  #head(twdata)
-
-  ##############################################################
-  #### PART 1: DATA EXPLORATION #####
-  twdata$Date2=as.Date(twdata$Date.Time, format = '%Y-%m-%d')
-  twdata$Year<- year(twdata$Date2)
-  twdata$Month <- month(twdata$Date2) # break out DMY columns
-  twdata$Day <- day(twdata$Date2)
-  twdata$Date.j <- julian(twdata$Date2)#Add julian day
-  twdata$Hours <- as.numeric(format(as.POSIXct(strptime(twdata$Date.Time,"%Y-%m-%d %H:%M",tz="")) ,format = "%H"))
-
+  write.csv( mdata.out , file.path(data_path, "GPS_consolidated_20200318.csv"))
