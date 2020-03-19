@@ -167,7 +167,7 @@ data_path <- file.path("data")
   data_path <- "I:/ES/General/Wildlife/WILDLIFE SPECIES/Moose/Telemetry/PMU Tweedsmuir/Entiako-Tweedsmuir Study Area/Collars/Data Request compilation/2014-2015/Date correction/"
 
   gps.files <- list.files(file.path(data_path))
-  gps.files <- as.list(gps.files[str_detect(gps.files, "GPS_")] )
+  gps.files <- as.list(gps.files[str_detect(gps.files, "GPS_Collar")] )
 
   mdata.out <- lapply(gps.files, function(x){
 
