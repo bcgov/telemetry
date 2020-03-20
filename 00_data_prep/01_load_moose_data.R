@@ -154,8 +154,6 @@ data_path <- file.path("data")
   # Run this part of the script to fix date format, add day, month, year columns and consolidate the files into a single
   # xlsx file which is written out
 
-
-
   library(dplyr)
   library(readxl)
   library(ggplot2)
@@ -183,6 +181,76 @@ data_path <- file.path("data")
   })
 
 
-  mdata.out  <- do.call("rbind", mdata.out )
+  # Part 4:  Moose summarised 2014-2014 --------------------------------------------------
+#checking locations to remove extraneous fixes,
+# replacing the collar serial numbers with the pseudonym
 
-  write.csv( mdata.out , file.path(data_path, "GPS_consolidated_20200318.csv"))
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(sf)
+library(sp)
+library (mapview)
+
+data_path <- file.path("data")
+
+mdata.0 <- read_xlsx(file.path(data_path, "2014 - 2015 Compiled Data.xlsx"),
+                         sheet = "2014-15 Web+Collar Compiled")
+
+
+moose <- rename(mdata.0, X = `Latitude [°]`, Y =`Longitude [°]` )
+
+
+id_key <- tribble(~ CollarID, ~ id,
+                 14220, "ENT181901",
+                 14326, "ENT181902",
+                 14434, "ENT181903",
+                 14435, "ENT181904",
+                 14440, "ENT181905",
+                 14441, "ENT181906",
+                 14444, "ENT181907",
+                 14446, "ENT181908",
+                 14449, "ENT181909",
+                 14772, "ENT181910"
+        )
+
+moose <- moose %>%
+  left_join(id_key)
+
+# check the distribution of points
+ggplot(moose, aes(Y, X)) +
+  geom_point()
+
+ggplot(moose, aes(Y,X)) +
+  geom_point() +
+  facet_wrap(~CollarID)
+
+
+write.csv(moose, file.path("data", "moose_1314.csv"))
+
+
+# Create a SpatialPointsDataFrame by defining the coordinates
+#moose.sp <- moose[, c("X", "Y", "id")]
+#coordinates(moose.sp) <- c("Y", "X")
+#proj4string(moose.sp) <- CRS("+proj=longlat +datum=WGS84 +units=m +no_defs" )
+
+
+moose.sf <- st_as_sf(moose, coords = c("X", "Y"), crs = 4326)
+moose.sf <- spTransform(moose.sp, CRS("+init=epsg:3005")) # Transform to UTM
+mapview::mapview(moose.sf)
+
+
+
+#  output a kml for easy investigation
+plotKML::kml(moose.sp,
+             file.name    = "moose2020.kml",
+             points_names = moose$CollarID,
+             colour    = "#FF0000",
+             alpha     = 0.6,
+             size      = 1,
+             shape     = "http://maps.google.com/mapfiles/kml/pal2/icon18.png")
+
+
+
+write.csv(moose, file.path("data", "moose_2020.csv"))
+
