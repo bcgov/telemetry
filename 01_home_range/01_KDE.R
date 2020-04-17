@@ -127,7 +127,7 @@ files <- list.files(data_path, pattern = "20191231.xlsx$")
 
 for( f in files){
 
-  f = files[4]
+  #f = files[1]
   fname = gsub("_20191231.xlsx", "", f)
 
 # import all sheets into single file with name of year
@@ -168,6 +168,8 @@ seasons = as.list(unique(indata$season))
 
 for (s in seasons) {
 
+ # s = seasons[[1]]
+
   tdata <- indata %>%
     filter(season == s) %>%
     droplevels() %>%
@@ -176,7 +178,7 @@ for (s in seasons) {
 
   # Create a SpatialPointsDataFrame by defining the coordinates
   coordinates(tdata) <- c("x", "y")
-  proj4string(tdata) <- CRS( "+proj=utm +zone=10 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" )
+  proj4string(tdata) <- CRS( "+proj=aea +lat_1=50 +lat_2=58.5 +lat_0=45 +lon_0=-126 +x_0=1000000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs " )
   tdfgeo <- spTransform(tdata, CRS("+init=epsg:3005")) # Transform to UTM
 
 
@@ -186,7 +188,7 @@ for (s in seasons) {
   ver95 <- getverticeshr( kde, 95)
   ver95.sf <- st_as_sf( ver95 )
 
-  st_write(ver95.sf, file.path ("out", paste0(fname, "_KDE95_",s, "_href.shp")))
+  st_write(ver95.sf, file.path ("out", paste0(fname, "_KDE95_",s, "_href.shp")), overwrite = TRUE)
 
 
   # run KDE using href as the
@@ -195,7 +197,7 @@ for (s in seasons) {
   ver95_lscv<- getverticeshr( kde_lscv, 95)
   ver95_lscv.sf <- st_as_sf( ver95_lscv)
 
-  st_write(ver95_lscv.sf , file.path ("out", paste0( fname, "_KDE95_",s, "_lsvc.shp")))
+  st_write(ver95_lscv.sf , file.path ("out", paste0( fname, "_KDE95_",s, "_lsvc.shp")), overwrite = TRUE)
 
 
  }
