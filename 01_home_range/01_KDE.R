@@ -127,7 +127,7 @@ files <- list.files(data_path, pattern = "20191231.xlsx$")
 
 for( f in files){
 
-  #f = files[1]
+  f = files[2]
   fname = gsub("_20191231.xlsx", "", f)
 
 # import all sheets into single file with name of year
@@ -168,7 +168,7 @@ seasons = as.list(unique(indata$season))
 
 for (s in seasons) {
 
- # s = seasons[[1]]
+  s = seasons[[2]]
 
   tdata <- indata %>%
     filter(season == s) %>%
@@ -183,21 +183,21 @@ for (s in seasons) {
 
 
   # run KDE using href as the
-  kde  <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
+ #  kde  <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
 
-  ver95 <- getverticeshr( kde, 95)
-  ver95.sf <- st_as_sf( ver95 )
+ #  ver95 <- getverticeshr( kde, 95)
+ #  ver95.sf <- st_as_sf( ver95 )
 
-  st_write(ver95.sf, file.path ("out", paste0(fname, "_KDE95_",s, "_href.shp")), overwrite = TRUE)
+  #st_write(ver95.sf, file.path ("out", paste0(fname, "_KDE95_",s, "_href.shp")), overwrite = TRUE)
 
 
   # run KDE using href as the
   kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
 
-  ver95_lscv<- getverticeshr( kde_lscv, 95)
+  ver95_lscv<- getverticeshr( kde_lscv, 50)
   ver95_lscv.sf <- st_as_sf( ver95_lscv)
 
-  st_write(ver95_lscv.sf , file.path ("out", paste0( fname, "_KDE95_",s, "_lsvc.shp")), overwrite = TRUE)
+  st_write(ver95_lscv.sf , file.path ("out", paste0( fname, "_KDE50_",s, "_lsvc.shp")), overwrite = TRUE)
 
 
  }
