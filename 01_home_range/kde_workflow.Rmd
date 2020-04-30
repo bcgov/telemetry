@@ -1,6 +1,6 @@
 ---
 title: "Caribou Kernal Density estimates"
-author: "G Perkins"
+author: "G Perkins (Ministry of Environment)"
 date: "16/04/2020"
 output: html_document
 ---
@@ -22,9 +22,27 @@ output: html_document
 
 ```
 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
 # Summary
 
-This workflow describes the process of generating Kernal density estimates for caribou herds, using R. This script is stored [here](https://github.com/bcgov/telemetry) along with other bits and pieces for analysing telemetry data. You can clone a copy directly from Github, or use the code.
+This workflow describes the process of generating Kernal density estimates for caribou herds, using R. kde's are output as geopackages. This script is stored [here](https://github.com/bcgov/telemetry) along with other bits and pieces for analysing telemetry data. You can clone a copy directly from Github, or use the code.
+
+
+The total number of raw fixes varied between individuals with seasons and years. All KDEs were calculated using a minimum of **??** unique locations as recommended for home range calculations (Seaman 1999, Kernohan 2001). Note telemetry data is yet to be subset by a specific time interval and currently includes all raw fixes. 
+
+
+## Kernel density estimates (KDE) backgrounder.
+
+KDEs are very sensitive to input parameters, specfically the bandwidth (h) which determines the smoothing parameter (https://cran.r-project.org/web/packages/adehabitatHR/vignettes/adehabitatHR.pdf). H parameters can be estimated using three methods 1) a reference bandwidth (h = σ × n ^−1/6), however this is generally an overestimate of the range, and is not suitable for multi-modal distributions. 2) Least Square Cross Validation (LSCV), which minimises the difference in volumne between the true UD and the estimates UD. 3) A subjective visual choice for the smoothing parameter, based on successive trials (Silverman, 1986; Wand & Jones 1995).
+
+For this analysis kde's were generated per herd using the default options (href and lscv). More detailed information testing sensitivity to bandwidth parameters can be found [here](<https://github.com/bcgov/clus/blob/master/R/caribou_habitat/04_caribou_habitat_model_telemetry_data_prep_doc.Rmd>) and [here](https://github.com/bcgov/sk_tda/blob/master/00_KDE_analysis_workflow.Rmd). 
+
+
 
 
 ## Initial set-up 
@@ -34,16 +52,12 @@ Once installed you can clone a copy directly from Github, or use the code direct
 
 If you use the code in isolation it is recommended to use R-studio project to make the filepaths easy to set up. 
 
-Save the raw data (csvs) in a folder called data. Note if new data is added please check the code to ensure consistency. 
+Save the raw data (csv's) in a folder called data. Note if new data is added please check the code to ensure consistency. 
 
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 Load in the libraries needed to run the analysis. Use  "install.packages()" command to install packages if needed. 
 
-```{r load libraries , eval = TRUE}
+```{r load libraries , eval = TRUE, results = "hide", warnings = FALSE, message = FALSE}
 
 library(lubridate)
 library(dplyr)
@@ -53,15 +67,16 @@ library(sp)
 library(ggplot2)
 library(sf)
 library(stringr)
+library(knitr)
 
 ```
 
-set up your path to your data folder. 
+Set up your path to your data folder. 
 
 ```{r set up folders, eval = TRUE }
 
-#list.files()
 data_path <- file.path("../data")
+out_path <- file.path("../out")
 
 ```
 
@@ -69,9 +84,10 @@ As the raw data formats vary between herds, we will firstly run the kde's on the
 
 ## KlinsaZa herd
 
-Import the raw data and format the date variable so we can filter by months and years. We can explore the number of fixes per year
+Import the raw data and examine the number of fixes per year and the fixes per individual.
 
 ```{r read in KlinseZa, eval = TRUE}
+
 indata <- read_xlsx(file.path(data_path, "KlinseZaAll_200320.xlsx"),
                     sheet = 2) %>%
                       rename(x = easting, y = northing )
@@ -81,76 +97,91 @@ counts.per.year = indata %>%
   group_by(yrbiol) %>%
   summarise(count = n())
 
-counts.per.year
+ggplot(counts.per.year, aes(x = yrbiol, y = count)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = "year", y = "no.of.fixes")
+
+#kable(counts.per.year, caption = "Telemetry fixes per year",align = "lccrr")
 
 no.of.ids <- indata %>%
   group_by(animal_id)%>%
   summarise(fix.id = n())
 
+ggplot(no.of.ids, aes(x = animal_id, y = fix.id)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = "year", y = "no.of.fixes")+ 
+   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
+
 ```
 
+The KlinseZa herd has data from `r min(counts.per.year$yrbiol)` to `r ##max(counts.per.year$yrbiol)` from `r length(no.of.ids$animal_id)` animals. Kde's will be calculated using data from 2002 - 2020. 
 
-The KlinseZa herd has data from `r min(counts.per.year$yrbiol)` to `r #max(counts.per.year$yrbiol)` from `r length(no.of.ids$animal_id)` animals. 
+Next we format the date variable so we can filter by months and years. We can also assign fixes to seasons based on the following dates : 
 
-```{r, eval = FALSE}
-
-# format date
-
-counts.per.year = indata %>%
-  group_by(yrbiol) %>%
-  summarise(count = n())
-
-# format date and filter for last 5 years and add season
-#
-# early winter : nov 1 - jan 14th
-# late winter : Jan 15 - march 31
-# spring : April 1 - May 14
+* Spring/calving (1 April to 14 June)
+* Summer (15 June to 14 September)
+*	Fall (15 Sept to 14 November)
+*	Early winter (15 November to 14 January)
+*	Late winter (15 January to 31 March)
 
 
+```{r format date, eval = TRUE}
 indata <- indata %>%
   mutate(day = as.numeric(str_sub(date_time, 1,2)),
         month = str_sub(date_time, 3, 5)) %>%
-  filter(yrbiol > 2014) %>%
+  filter(yrbiol > 2001) %>%
   mutate(season = case_when(
-            month == "APR" ~ "spring",
-            month == "MAY" & day <15 ~ "spring",
-            month %in% c("FEB", "MAR") ~ "late winter",
-            month == "JAN" & day > 14 ~ "late winter",
-            month %in% c("NOV", "DEC") ~ "early winter",
-            month == "JAN" & day < 15 ~ "early winter"))
+            month %in% c("APR", "MAY") ~ "spring",
+            month == "JUN" & day <15 ~ "spring",
+            month == "JUN" & day >=15 ~ "summer",
+            month %in% c("JUL", "AUG") ~ "summer",
+            month == "SEP" & day <15 ~ "summer",
+            month == "SEP" & day >14 ~ "fall",
+            month == "OCT" ~ "fall",
+            month == "NOV" & day <15 ~ "fall",
+            month == "NOV" & day >14 ~ "early winter",
+            month == "DEC" ~ "early winter",
+            month == "JAN" & day <15 ~ "early winter",
+            month == "JAN" & day >14 ~ "late winter",
+            month %in% c("FEB", "MAR") ~ "late winter"))
+  
 
-# filter seasons of interest
+# check with Agnes if there is any minimum number. 
+```
 
-indata <- indata %>%
-  filter(! is.na(season))
-
+```{r, include=FALSE}
 
 # filter animal 1d with > 50 counts
 
-animal.ids <- indata %>%
-  group_by(animal_id) %>%
-  summarise(count = n()) %>%
-  filter(count > 50) %>%
-  dplyr:: select(animal_id) %>%
-  pull()
+#animal.ids <- indata %>%
+#  group_by(animal_id) %>%
+#  summarise(count = n()) %>%
+#  filter(count > 50) %>%
+#  dplyr:: select(animal_id) %>%
+#  pull()
 
 
-indata <- indata %>%
-  filter(animal_id %in% animal.ids) %>%
-  mutate(animal_id = as.factor(animal_id))
+#indata <- indata %>%
+#  filter(animal_id %in% animal.ids) %>%
+#  mutate(animal_id = as.factor(animal_id))
+
+```
+
+Format the data so we can use the package Adehabitat to create kde's. projections are set to zone 10 UTM and converted to BC Albers (EPSG:3005). Note when running the kde, 
+the grid and extent parameters can be adjusted (https://mran.microsoft.com/snapshot/2017-12-11/web/packages/adehabitatHR/vignettes/adehabitatHR.pdf)
 
 
-# kernal density estimates
-
+```{r run kde, eval = TRUE}
 seasons = as.list(unique(indata$season))
-
+hrpc = c(50, 75, 90)
 
 for (s in seasons) {
-
+  
   tdata <- indata %>%
     filter(season == s) %>%
+    mutate(herd = "KlinseZa") %>%
     droplevels() %>%
-    dplyr::select(x,y, animal_id) %>%
+    dplyr::select(x,y, herd) %>%
     distinct()
 
   # Create a SpatialPointsDataFrame by defining the coordinates
@@ -158,36 +189,59 @@ for (s in seasons) {
   proj4string(tdata) <- CRS( "+proj=utm +zone=10 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" )
   tdfgeo <- spTransform(tdata, CRS("+init=epsg:3005")) # Transform to UTM
 
+  kde <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
 
-  # run KDE using href as the
-  kde  <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
-
-  ver95 <- getverticeshr( kde, 95)
-  ver95.sf <- st_as_sf( ver95 )
-
-  st_write(ver95.sf, file.path ("out", paste0("KlinseZa_KDE95_",s, "_href.shp")))
-
-
-  # run KDE using href as the
+ for (p in hrpc){
+     tryCatch({
+      ver <- getverticeshr(kde, p)
+      ver.sf <- st_as_sf(ver)
+    st_write(ver.sf, file.path("../out", paste0("KlinseZa_KDE", p, "_", s, "_href.gpkg")), delete_dsn = TRUE)
+      
+      },
+      error = function(e){
+      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
+    })          
+          
+ } # end of kde for href
+    
+  # run KDE using lscv
   kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
 
-  ver95_lscv<- getverticeshr( kde_lscv, 95)
-  ver95_lscv.sf <- st_as_sf( ver95_lscv)
+   for (p in hrpc){
+     tryCatch({
+    ver <- getverticeshr( kde, p)
+    ver.sf <- st_as_sf(ver)
+    st_write(ver.sf, file.path ("./out", paste0("KlinseZa_KDE", p, "_",s, "_lscv.gpkg")), delete_dsn = TRUE)
+      
+      },
+      error = function(e){
+      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
+    })          
+          
+ } # end of kde for lscv 
 
-  st_write(ver95_lscv.sf , file.path ("out", paste0("KlinseZa_KDE95_",s, "_lsvc.shp")))
+    
+} # end of season loop 
 
 
-}
+
+```
 
 
-# FOr the othe herd that are all the same format
 
+## Herds: Kennedy Siding, Quintette, Narraway, BurntPine 
+
+
+As these herds all have data fomatted in the same way we can process this in a single loop. 
+
+
+```{r loop multi herds, eval = TRUE}
 
 files <- list.files(data_path, pattern = "20191231.xlsx$")
 
-for( f in files){
+for(f in files){
 
-  f = files[2]
+ # f = files[1]
   fname = gsub("_20191231.xlsx", "", f)
 
 # import all sheets into single file with name of year
@@ -195,88 +249,124 @@ indata <- read_xlsx(file.path(data_path, f)) %>%
   rename(x = AlbersX, y = AlbersY) %>%
   dplyr::select(Animal_ID, x, y, Year,	Month,	Day) %>%
   rename_all(.funs = tolower) %>%
-  dplyr::filter(year > max(indata$year)-5) %>%
+ # dplyr::filter(year > max(indata$year)-5) %>%
   mutate(season = case_when(
-    month == 4 ~ "spring",
-    month == 5 & day <15 ~ "spring",
-    month %in% c(2, 3) ~ "late winter",
-    month == 1 & day > 14 ~ "late winter",
-    month %in% c(11, 12) ~ "early winter",
-    month == 1 & day < 15 ~ "early winter")) %>%
-  filter(!is.na(season))
+    month %in% c(4,5) ~ "spring",
+    month == 6 & day <15 ~ "spring",
+    month == 6 & day >14 ~ "summer",
+    month %in% c(7,8) ~ "summer",
+    month == 9 & day <15 ~ "summer",
+    month == 9 & day >14 ~ "fall",
+    month == 10 ~ "fall",
+    month == 11 & day <15 ~ "fall",
+    month == 11 & day >14 ~ "early winter",
+    month == 12 ~ "early winter",
+    month == 1 & day <15 ~ "early winter",
+    month == 1 & day >14 ~ "late winter",
+    month %in% c(2,3) ~ "late winter"))
 
 
-# filter animal 1d with > 50 counts
-
-animal.ids <- indata %>%
-  group_by(animal_id) %>%
-  summarise(count = n()) %>%
-  filter(count > 50) %>%
-  dplyr:: select(animal_id) %>%
-  pull()
-
-
-indata <- indata %>%
-  filter(animal_id %in% animal.ids) %>%
-  mutate(animal_id = as.factor(animal_id))
-
+# # filter animal 1d with > 50 counts
+# animal.ids <- indata %>%
+#   group_by(animal_id) %>%
+#   summarise(count = n()) %>%
+#   filter(count > 50) %>%
+#   dplyr:: select(animal_id) %>%
+#   pull()
+# 
+# 
+# indata <- indata %>%
+#   filter(animal_id %in% animal.ids) %>%
+#   mutate(animal_id = as.factor(animal_id))
+# 
 
 # kernal density estimates
 
 seasons = as.list(unique(indata$season))
-
+hrpc = c(50, 75, 90)
 
 for (s in seasons) {
 
-  s = seasons[[2]]
+ # s = seasons[[2]]
 
   tdata <- indata %>%
     filter(season == s) %>%
+    mutate(herd = fname) %>%
     droplevels() %>%
-    dplyr::select(x,y, animal_id) %>%
+    dplyr::select(x,y, herd) %>%
     distinct()
 
   # Create a SpatialPointsDataFrame by defining the coordinates
   coordinates(tdata) <- c("x", "y")
-  proj4string(tdata) <- CRS( "+proj=aea +lat_1=50 +lat_2=58.5 +lat_0=45 +lon_0=-126 +x_0=1000000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs " )
+  proj4string(tdata) <- CRS( "+proj=utm +zone=10 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" )
   tdfgeo <- spTransform(tdata, CRS("+init=epsg:3005")) # Transform to UTM
 
+  kde <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
 
-  # run KDE using href as the
- #  kde  <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
-
- #  ver95 <- getverticeshr( kde, 95)
- #  ver95.sf <- st_as_sf( ver95 )
-
-  #st_write(ver95.sf, file.path ("out", paste0(fname, "_KDE95_",s, "_href.shp")), overwrite = TRUE)
-
-
-  # run KDE using href as the
+ for (p in hrpc){
+     tryCatch({
+      ver <- getverticeshr(kde, p)
+      ver.sf <- st_as_sf(ver)
+    st_write(ver.sf, file.path("../out", paste0(fname, "_KDE", p, "_", s, "_href.gpkg")), delete_dsn = TRUE)
+      
+      },
+      error = function(e){
+      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
+    })          
+          
+ } # end of kde for href
+    
+  # run KDE using lscv
   kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
 
-  ver95_lscv<- getverticeshr( kde_lscv, 50)
-  ver95_lscv.sf <- st_as_sf( ver95_lscv)
+   for (p in hrpc){
+     tryCatch({
+    ver <- getverticeshr( kde, p)
+    ver.sf <- st_as_sf(ver)
+    st_write(ver.sf, file.path ("./out", paste0(fname, "_KDE", p, "_",s, "_lscv.gpkg")), delete_dsn = TRUE)
+      
+      },
+      error = function(e){
+      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
+    })          
+          
+ } # end of kde for lscv 
 
-  st_write(ver95_lscv.sf , file.path ("out", paste0( fname, "_KDE50_",s, "_lsvc.shp")), overwrite = TRUE)
-
-
- }
-
-}
-
-
-
-
-
-
-## Kernel density estimates (KDE)
-
-KDEs are very sensitive to input parameters, specfically the bandwidth (h) which determines the smoothing parameter (https://cran.r-project.org/web/packages/adehabitatHR/vignettes/adehabitatHR.pdf). H parameters can be estimated using three methods 1) a reference bandwidth (h = σ × n ^−1/6), however this is generally an overestimate of the range, and is not suitable for multi-modal distributions. 2) Least Square Cross Validation (LSCV), which minimises the difference in volumne between the true UD and the estimates UD. 3) A subjective visual choice for the smoothing parameter, based on successive trials (Silverman, 1986; Wand & Jones 1995).
-
-To create home ranges for each unique id we used a bivariate normal kernel with a variety of h (smoothing parameters). We then interpreted visually to determine size to use based on successive trials. This is supported by the literature (Hemson et al. 2005; Calenge et al. 2011)
-
-After extensive testing with a variety of h parameters we elected to have a user estimated h paramter. This followed implementation of similar Caribou Analysis conducted by T. Muhly <https://github.com/bcgov/clus/blob/master/R/caribou_habitat/04_caribou_habitat_model_telemetry_data_prep_doc.Rmd>
+    
+} # end of season loop 
 
 
+} # end of herd loop 
 
+```
+
+
+## References 
+- Packages: estimate Kernel home range Utiliation Distribution Using adehabitatHR (Calenge et al. 2011) (https://cran.r-project.org/web/packages/adehabitatHR/vignettes/adehabitatHR.pdf)
+
+
+- KDE : "http://www.spatialecology.com/gme/kde.htm"
+
+- https://www.ckwri.tamuk.edu/sites/default/files/publication/pdfs/2017/leonard_analyzing_wildlife_telemetry_data_in_r.pdf
+
+ - Seaman, D. E., Millspaugh, J. J., Kernohan, B. J., Brundige, G. C., Raedeke, K. J., & Gitzen, R. A. (1999). Effects of sample #size on kernel home range estimates. The journal of wildlife management, 739-747.
+- Kernohan, B. J., R. A. Gitzen, and J. J. Millspaugh. 2001. Analysis of animal space use and movements. Pages 125–166 in J. J. #Millspaugh and J. M. Marzluff, editors. Radio tracking and animal populations. Academic Press, San Diego, CA, USA
+
+- Hemson, G., Johnson, P., South, A., Kenward, R., Ripley, R., & MACDONALD, D. (2005). Are kernels the mustard? Data from global positioning system (GPS) collars suggests problems for kernel home‐range analyses with least‐squares cross‐validation. Journal of Animal Ecology, 74(3), 455-463
+
+
+
+
+### Appendices 1: KDE Parameters in Detail 
+
+KDE were used to determine density of individuals. Calculations for KDE require consideration of the mathematical method to describe the density function. A detailed description of the parameters can be found here :  (http://www.spatialecology.com/gme/kde.htm). 
+
+- Kernal Type:  The type of kernal is limited to Gaussian (bivariate normal), quadratic or normal. We used the bivariate normal model as default. 
+
+- Bandwidth (h): This determines the level of smoothing used. The two types include "href" and "LSCV"(Least Squared Cross Validation). The bandwidth will be determined by the type of kernal chosen. Some tools and functions are available to estiamte the optimal Bandwidth ie: (ks: Hpi.diag) (https://cran.r-project.org/web/packages/ks/ks.pdf) or to plot optimal bandwidth using LSCV method. (ks:plotLSCV()). Using the Hpi.diag provides estimates of h that can be entered manually. 
+
+- Cell size : This determines the area or extent over which the home range will be estimated. This is a mix of fine scale and time consuming processing and faster blocky resolution over a continuous surface. As a rule of thumb you can  GME suggests: take the square root of the x or y variance value (whichever is smaller) and divide by 5 or 10 (I usually round to the nearest big number - so 36.7 becomes 40). Before using this rule of thumb value calculate how many cells this will result in for the output (take the width and height of you input points, divide by the cell size, and multiply the resulting numbers together). If you get a value somewhere between 1-20 million, then you have a reasonable value. If you have a value much larger then 20 million cells then consider increasing the cell size (http://www.spatialecology.com/gme/kde.htm).
+
+
+Note it is also possible to run KDE with set barriers and boundaries. 
 
