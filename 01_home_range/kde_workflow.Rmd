@@ -205,20 +205,20 @@ for (s in seasons) {
  } # end of kde for href
     
   # run KDE using lscv
-  kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
-
-   for (p in hrpc){
-     tryCatch({
-    ver <- getverticeshr( kde, p)
-    ver.sf <- st_as_sf(ver)
-    st_write(ver.sf, file.path ("./out", paste0("KlinseZa_KDE", p, "_",s, "_lscv.gpkg")), delete_dsn = TRUE)
-      
-      },
-      error = function(e){
-      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
-    })          
-          
- } # end of kde for lscv 
+#  kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
+#
+#   for (p in hrpc){
+#     tryCatch({
+#    ver <- getverticeshr( kde, p)
+#    ver.sf <- st_as_sf(ver)
+#    st_write(ver.sf, file.path ("./out", paste0("KlinseZa_KDE", p, "_",s, "_lscv.gpkg")), delete_dsn = TRUE)
+#      
+#      },
+#      error = function(e){
+#      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
+#    })          
+#          
+# } # end of kde for lscv 
 
     
 } # end of season loop 
@@ -317,20 +317,20 @@ for (s in seasons) {
  } # end of kde for href
     
   # run KDE using lscv
-  kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
+#  kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
 
-   for (p in hrpc){
-     tryCatch({
-    ver <- getverticeshr( kde, p)
-    ver.sf <- st_as_sf(ver)
-    st_write(ver.sf, file.path ("./out", paste0(fname, "_KDE", p, "_",s, "_lscv.gpkg")), delete_dsn = TRUE)
+#   for (p in hrpc){
+#     tryCatch({
+#    ver <- getverticeshr( kde, p)
+#    ver.sf <- st_as_sf(ver)
+#    st_write(ver.sf, file.path ("./out", paste0(fname, "_KDE", p, "_",s, "_lscv.gpkg")), delete_dsn = TRUE)
       
-      },
-      error = function(e){
-      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
-    })          
-          
- } # end of kde for lscv 
+#      },
+#      error = function(e){
+#      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
+#    })          
+#          
+# } # end of kde for lscv 
 
     
 } # end of season loop 
