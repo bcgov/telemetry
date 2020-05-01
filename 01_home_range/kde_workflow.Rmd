@@ -79,6 +79,7 @@ Set up your path to your data folder.
 data_path <- file.path("../data")
 out_path <- file.path("../out")
 
+
 ```
 
 As the raw data formats vary between herds, we will firstly run the kde's on the KlinseZa herd then the other herds in a loop. 
@@ -100,7 +101,7 @@ counts.per.year = indata %>%
 
 ggplot(counts.per.year, aes(x = yrbiol, y = count)) + 
   geom_bar(stat = "identity") + 
-  labs(x = "year", y = "no.of.fixes")
+  labs(x = "year", y = "no.of.fixes", title = "KlinsaZa")
 
 #kable(counts.per.year, caption = "Telemetry fixes per year",align = "lccrr")
 
@@ -110,7 +111,7 @@ no.of.ids <- indata %>%
 
 ggplot(no.of.ids, aes(x = animal_id, y = fix.id)) + 
   geom_bar(stat = "identity") + 
-  labs(x = "year", y = "no.of.fixes")+ 
+  labs(x = "year", y = "no.of.fixes",  title = "KlinsaZa")+ 
    theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
 
 ```
@@ -127,6 +128,7 @@ Next we format the date variable so we can filter by months and years. We can al
 
 
 ```{r format date, eval = TRUE}
+
 indata <- indata %>%
   mutate(day = as.numeric(str_sub(date_time, 1,2)),
         month = str_sub(date_time, 3, 5)) %>%
@@ -146,11 +148,21 @@ indata <- indata %>%
             month == "JAN" & day >14 ~ "late winter",
             month %in% c("FEB", "MAR") ~ "late winter"))
   
+# check data spread
+counts.per.season = indata %>%
+  group_by(season) %>%
+  summarise(count = n())
+
+ggplot(counts.per.season, aes(x = season, y = count)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = "season", y = "no.of.fixes", title = "KlinsaZa")
+
 
 # check with Agnes if there is any minimum number. 
 ```
 
 ```{r, include=FALSE}
+## this is not implemented but saving as a place holder if required
 
 # filter animal 1d with > 50 counts
 
@@ -184,7 +196,7 @@ for (s in seasons) {
     droplevels() %>%
     dplyr::select(x,y, herd) %>%
     distinct()
-
+  
   # Create a SpatialPointsDataFrame by defining the coordinates
   coordinates(tdata) <- c("x", "y")
   proj4string(tdata) <- CRS( "+proj=utm +zone=10 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" )
@@ -207,7 +219,7 @@ for (s in seasons) {
     
   # run KDE using lscv
 #  kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
-#
+
 #   for (p in hrpc){
 #     tryCatch({
 #    ver <- getverticeshr( kde, p)
@@ -233,7 +245,7 @@ for (s in seasons) {
 ## Herds: Kennedy Siding, Quintette, Narraway, BurntPine 
 
 
-As these herds all have data fomatted in the same way we can process this in a single loop. 
+As these herds all have data fomatted in the same way we can process this in a single loop.
 
 
 ```{r loop multi herds, eval = TRUE}
@@ -265,6 +277,30 @@ indata <- read_xlsx(file.path(data_path, f)) %>%
     month == 1 & day <15 ~ "early winter",
     month == 1 & day >14 ~ "late winter",
     month %in% c(2,3) ~ "late winter"))
+
+
+# add plots 
+ no.of.ids <- indata %>%
+  group_by(animal_id)%>%
+  summarise(fix.id = n())
+
+ outplot1 <- ggplot(no.of.ids, aes(x = animal_id, y = fix.id)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = "year", y = "no.of.fixes", title = fname)+ 
+   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
+
+print(outplot1)
+ 
+# generate plots for data spread: 
+  counts.per.year = indata %>%
+    group_by(year) %>%
+    summarise(count = n())
+
+ outplot2 <-  ggplot(counts.per.year, aes(x = year, y = count)) + 
+   geom_bar(stat = "identity") + 
+    labs(x = "year", y = "no.of.fixes", title = fname)
+
+print(outplot2) 
 
 
 # # filter animal 1d with > 50 counts
@@ -312,7 +348,7 @@ for (s in seasons) {
       
       },
       error = function(e){
-      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
+      print(paste0("unable to generate vertices for ", p, "% vertices for ", s))
     })          
           
  } # end of kde for href
@@ -353,7 +389,7 @@ for (s in seasons) {
  - Seaman, D. E., Millspaugh, J. J., Kernohan, B. J., Brundige, G. C., Raedeke, K. J., & Gitzen, R. A. (1999). Effects of sample #size on kernel home range estimates. The journal of wildlife management, 739-747.
 - Kernohan, B. J., R. A. Gitzen, and J. J. Millspaugh. 2001. Analysis of animal space use and movements. Pages 125–166 in J. J. #Millspaugh and J. M. Marzluff, editors. Radio tracking and animal populations. Academic Press, San Diego, CA, USA
 
-- Hemson, G., Johnson, P., South, A., Kenward, R., Ripley, R., & MACDONALD, D. (2005). Are kernels the mustard? Data from global positioning system (GPS) collars suggests problems for kernel home‐range analyses with least‐squares cross‐validation. Journal of Animal Ecology, 74(3), 455-463
+- Hemson, G., Johnson, P., South, A., Kenward, R., Ripley, R., & MacDonald, D. (2005). Are kernels the mustard? Data from global positioning system (GPS) collars suggests problems for kernel home‐range analyses with least‐squares cross‐validation. Journal of Animal Ecology, 74(3), 455-463
 
 
 
