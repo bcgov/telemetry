@@ -2,7 +2,8 @@
 title: "Caribou Kernal Density estimates"
 author: "G Perkins (Ministry of Environment)"
 date: "16/04/2020"
-output: html_document
+output: word_document 
+#html_document
 ---
 
 ```{r copyright, include = FALSE}
@@ -88,7 +89,7 @@ As the raw data formats vary between herds, we will firstly run the kde's on the
 
 Import the raw data and examine the number of fixes per year and the fixes per individual.
 
-```{r read in KlinseZa, eval = TRUE}
+```{r read in KlinseZa, eval = TRUE, cache = TRUE}
 
 indata <- read_xlsx(file.path(data_path, "KlinseZaAll_200320.xlsx"),
                     sheet = 2) %>%
@@ -127,7 +128,7 @@ Next we format the date variable so we can filter by months and years. We can al
 *	Late winter (15 January to 31 March)
 
 
-```{r format date, eval = TRUE}
+```{r format date, eval = TRUE, cache = TRUE}
 
 indata <- indata %>%
   mutate(day = as.numeric(str_sub(date_time, 1,2)),
@@ -184,7 +185,7 @@ Format the data so we can use the package Adehabitat to create kde's. projection
 the grid and extent parameters can be adjusted (https://mran.microsoft.com/snapshot/2017-12-11/web/packages/adehabitatHR/vignettes/adehabitatHR.pdf)
 
 
-```{r run kde, eval = TRUE}
+```{r run kde, eval = TRUE, cache = TRUE}
 seasons = as.list(unique(indata$season))
 hrpc = c(50, 75, 95)
 
