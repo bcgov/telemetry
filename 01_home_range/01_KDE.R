@@ -26,7 +26,7 @@ library(sf)
 library(stringr)
 
 data_path <- file.path("data")
-out_path <- file.path("out/snowmobile")
+out_path <- file.path("out")
 
 
 
@@ -54,7 +54,7 @@ no.of.ids <- indata %>%
 
 ggplot(no.of.ids, aes(x = animal_id, y = fix.id)) +
   geom_bar(stat = "identity") +
-  labs(x = "year", y = "no.of.fixes")+
+  labs(x = "id", y = "no.of.fixes")+
   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
 
 
@@ -114,7 +114,7 @@ for (s in seasons) {
    tdata <- indata %>%
     filter(season == s) %>%
     droplevels() %>%
-    dplyr::select( x, y, herd) %>%
+    dplyr::select( x, y, animal_id) %>%
     distinct()
 
   # Create a SpatialPointsDataFrame by defining the coordinates
@@ -131,15 +131,14 @@ for (s in seasons) {
 
   kde <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
 
-  saveRDS(kde, file = file.path(out_path, paste0("KlinseZa_KDE_", s, "_href_model.rds")))
-
+  saveRDS(kde, file = file.path(out_path, paste0("KlinseZa_KDE_", s, "_LSCV_model.rds")))
 
   for (p in hrpc){
     tryCatch({
       ver <- getverticeshr(kde, p)
       ver.sf <- st_as_sf(ver)
-      st_write(ver.sf, file.path("out", paste0("KlinseZa_KDE", p, "_", s, "_lscv.gpkg")), delete_dsn = TRUE)
-      st_write(ver.sf, file.path("out", paste0("KlinseZa_KDE", p, "_", s, "_lsvc.shp")))
+      st_write(ver.sf, file.path("out", paste0("KlinseZa_KDE", p, "_", s, "_LSCV.gpkg")), delete_dsn = TRUE)
+      st_write(ver.sf, file.path("out", paste0("KlinseZa_KDE", p, "_", s, "_LSCV.shp")), delete_dsn = TRUE)
 
     },
     error = function(e){
@@ -169,7 +168,7 @@ indata <- read_xlsx(file.path(data_path, f)) %>%
   rename(x = AlbersX, y = AlbersY) %>%
   dplyr::select(Animal_ID, x, y, Year,	Month,	Day) %>%
   rename_all(.funs = tolower) %>%
-  dplyr::filter(year > max(indata$year)-5) %>%
+#  dplyr::filter(year > max(indata$year)-5) %>%
   mutate(season = case_when(
     month == 4 ~ "spring",
     month == 5 & day <15 ~ "spring",
@@ -198,7 +197,7 @@ indata <- indata %>%
 # kernal density estimates
 
 seasons = as.list(unique(indata$season))
-
+hrpc = c(50, 75, 95)
 
 for (s in seasons) {
 
@@ -208,12 +207,12 @@ for (s in seasons) {
     filter(season == s) %>%
     mutate(herd = fname) %>%
     droplevels() %>%
-    dplyr::select(x,y, herd) %>%
+    dplyr::select(x,y, animal_id) %>%
     distinct()
 
   # Create a SpatialPointsDataFrame by defining the coordinates
   coordinates(tdata) <- c("x", "y")
-  proj4string(tdata) <- CRS("+init=epsg:3005"))
+  proj4string(tdata) <- CRS("+init=epsg:3005")
   tdfgeo <- tdata
 
 
@@ -227,15 +226,15 @@ for (s in seasons) {
   kde  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
 
 
-  saveRDS(kde, file = file.path(out_path, paste0(fname, "_kde", p, "_", s, "_href_model.rds")))
+  saveRDS(kde, file = file.path(out_path, paste0(fname, "_KDE_", s, "_LSCV_model.rds")))
   #kde_href <- kde1$BurntPine@h[[1]]
 
   for (p in hrpc){
     tryCatch({
       ver <- getverticeshr(kde, p)
       ver.sf <- st_as_sf(ver)
-      st_write(ver.sf, file.path("out", paste0(fname, "_KDE", p, "_", s, "_lscv.gpkg")), delete_dsn = TRUE)
-      st_write(ver.sf, file.path("out", paste0(fname, "_KDE", p, "_", s, "_lsvc.shp")))
+      st_write(ver.sf, file.path("out", paste0(fname, "_KDE", p, "_", s, "_LSCV.gpkg")), delete_dsn = TRUE)
+      st_write(ver.sf, file.path("out", paste0(fname, "_KDE", p, "_", s, "_LSCV.shp")), delete_dsn = TRUE)
 
     },
     error = function(e){
