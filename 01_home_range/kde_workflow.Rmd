@@ -34,7 +34,7 @@ knitr::opts_chunk$set(echo = TRUE,
 
 # Summary
 
-This workflow describes the process of generating Kernal density estimates for caribou herds, using R. kde's are output as geopackages. This script is stored [here](https://github.com/bcgov/telemetry) along with other bits and pieces for analysing telemetry data. You can clone a copy directly from Github, or use the code.
+This workflow describes the process of generating Kernal density estimates for caribou herds, using R. Kde's are output as geopackages and shapefiles. This script is stored [here](https://github.com/bcgov/telemetry) along with other bits and pieces for analysing telemetry data. You can clone a copy directly from Github, or use the code.
 
 
 The total number of raw fixes varied between individuals with seasons and years. All KDEs were calculated using a minimum of **??** unique locations as recommended for home range calculations (Seaman 1999, Kernohan 2001). Note telemetry data is yet to be subset by a specific time interval and currently includes all raw fixes. 
@@ -42,7 +42,7 @@ The total number of raw fixes varied between individuals with seasons and years.
 
 ## Kernel density estimates (KDE) backgrounder.
 
-KDEs are very sensitive to input parameters, specfically the bandwidth (h) which determines the smoothing parameter (https://cran.r-project.org/web/packages/adehabitatHR/vignettes/adehabitatHR.pdf). H parameters can be estimated using three methods 1) a reference bandwidth (h = σ × n ^−1/6), however this is generally an overestimate of the range, and is not suitable for multi-modal distributions. 2) Least Square Cross Validation (LSCV), which minimises the difference in volumne between the true UD and the estimates UD. 3) A subjective visual choice for the smoothing parameter, based on successive trials (Silverman, 1986; Wand & Jones 1995).
+KDEs are very sensitive to input parameters, specfically the bandwidth (h) which determines the [smoothing parameter](https://cran.r-project.org/web/packages/adehabitatHR/vignettes/adehabitatHR.pdf). H parameters can be estimated using three methods 1) a reference bandwidth (h = σ × n ^−1/6), however this is generally an overestimate of the range, and is not suitable for multi-modal distributions. 2) Least Square Cross Validation (LSCV), which minimises the difference in volumne between the true UD and the estimates UD. 3) A subjective visual choice for the smoothing parameter, based on successive trials (Silverman, 1986; Wand & Jones 1995).
 
 For this analysis kde's were generated per herd using the default options (href and lscv). More detailed information testing sensitivity to bandwidth parameters can be found [here](<https://github.com/bcgov/clus/blob/master/R/caribou_habitat/04_caribou_habitat_model_telemetry_data_prep_doc.Rmd>) and [here](https://github.com/bcgov/sk_tda/blob/master/00_KDE_analysis_workflow.Rmd). 
 
@@ -80,7 +80,7 @@ Set up your path to your data folder.
 ```{r set up folders, eval = TRUE }
 
 data_path <- file.path("../data")
-out_path <- file.path("../out")
+out_path <- file.path("../out/final")
 
 ```
 
@@ -127,6 +127,7 @@ Next we format the date variable so we can filter by months and years. We can al
 *	Fall (15 Sept to 14 November)
 *	Early winter (15 November to 14 January)
 *	Late winter (15 January to 31 March)
+*
 
 
 ```{r format date, eval = TRUE, cache = TRUE}
@@ -186,7 +187,7 @@ Format the data so we can use the package Adehabitat to create kde's. projection
 the grid and extent parameters can be adjusted (https://mran.microsoft.com/snapshot/2017-12-11/web/packages/adehabitatHR/vignettes/adehabitatHR.pdf)
 
 
-```{r run kde, eval = TRUE, cache = TRUE}
+```{r run kde, eval = TRUE, cache = FALSE}
 seasons = as.list(unique(indata$season))
 hrpc = c(50, 75, 95)
 
@@ -206,11 +207,15 @@ for (s in seasons) {
 
   kde <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
 
+  saveRDS(kde, file = file.path(out_path, paste0("KlinseZa_KDE", p, "_", s, "_href_model.rds")))
+
+  
  for (p in hrpc){
      tryCatch({
       ver <- getverticeshr(kde, p)
       ver.sf <- st_as_sf(ver)
-    st_write(ver.sf, file.path("../out", paste0("KlinseZa_KDE", p, "_", s, "_href.gpkg")), delete_dsn = TRUE)
+    st_write(ver.sf, file.path(out_path, paste0("KlinseZa_KDE", p, "_", s, "_href.gpkg")), delete_dsn = TRUE)
+    st_write(ver.sf, file.path(out_path, paste0("KlinseZa_KDE", p, "_", s, "_href.shp")), delete_dsn = TRUE)
       
       },
       error = function(e){
@@ -345,8 +350,7 @@ for (s in seasons) {
   saveRDS(kde, file = file.path(out_path, paste0(fname, "_kde", p, "_", s, "_href_model.rds")))
   #kde_href <- kde1$BurntPine@h[[1]]
   
-  # kde1 <- readRDS(file = file.path(out_path, paste0(fname, "_kde", p, "_", s, "_href_model.rds"))) 
- 
+  
   # plotLSCV(kde)
   
  for (p in hrpc){
@@ -354,8 +358,8 @@ for (s in seasons) {
      tryCatch({
       ver <- getverticeshr(kde, p)
       ver.sf <- st_as_sf(ver)
-    st_write(ver.sf, file.path("../out", paste0(fname, "_KDE", p, "_", s, "_href.gpkg")), delete_dsn = TRUE)
-    st_write(ver.sf, file.path("../out", paste0(fname, "_KDE", p, "_", s, "_href.shp")), delete_dsn = TRUE)
+    st_write(ver.sf, file.path(out_path, paste0(fname, "_KDE", p, "_", s, "_href.gpkg")), delete_dsn = TRUE)
+    st_write(ver.sf, file.path(out_path, paste0(fname, "_KDE", p, "_", s, "_href.shp")), delete_dsn = TRUE)
       },
       error = function(e){
       print(paste0("unable to generate vertices for ", p, "% vertices for ", s))
@@ -386,6 +390,20 @@ for (s in seasons) {
 } # end of herd loop 
 
 ```
+
+
+Note : please review the warning messages above as this indicates which KDE's could not be generated
+
+
+
+```{r read in kde models, echo - FALSE, eval = FALSE}
+
+# kde1 <- readRDS(file = file.path(out_path, paste0(fname, "_kde", p, "_", s, "_href_model.rds"))) 
+ 
+
+
+```
+
 
 
 ## References 
