@@ -26,22 +26,41 @@ library(sf)
 library(stringr)
 
 data_path <- file.path("data")
+out_path <- file.path("out/snowmobile")
+
+
+
+# KinseZa Herd ------------------------------------------------------------
 
 
 # import all sheets into single file with name of year
 indata <- read_xlsx(file.path(data_path, "KlinseZaAll_200320.xlsx"),
                     sheet = 2) %>%
-                      rename(x = easting, y = northing )
+  rename(x = easting, y = northing )
 
 
-# format date
-
+# check data spread
 counts.per.year = indata %>%
   group_by(yrbiol) %>%
   summarise(count = n())
 
+ggplot(counts.per.year, aes(x = yrbiol, y = count)) +
+  geom_bar(stat = "identity") +
+  labs(x = "year", y = "no.of.fixes")
+
+no.of.ids <- indata %>%
+  group_by(animal_id)%>%
+  summarise(fix.id = n())
+
+ggplot(no.of.ids, aes(x = animal_id, y = fix.id)) +
+  geom_bar(stat = "identity") +
+  labs(x = "year", y = "no.of.fixes")+
+  theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
+
+
+
 # format date and filter for last 5 years and add season
-#
+
 # early winter : nov 1 - jan 14th
 # late winter : Jan 15 - march 31
 # spring : April 1 - May 14
@@ -49,15 +68,16 @@ counts.per.year = indata %>%
 
 indata <- indata %>%
   mutate(day = as.numeric(str_sub(date_time, 1,2)),
-        month = str_sub(date_time, 3, 5)) %>%
-  filter(yrbiol > 2014) %>%
+         month = str_sub(date_time, 3, 5)) %>%
+#  filter(yrbiol > 2014) %>%
   mutate(season = case_when(
-            month == "APR" ~ "spring",
-            month == "MAY" & day <15 ~ "spring",
-            month %in% c("FEB", "MAR") ~ "late winter",
-            month == "JAN" & day > 14 ~ "late winter",
-            month %in% c("NOV", "DEC") ~ "early winter",
-            month == "JAN" & day < 15 ~ "early winter"))
+    month == "APR" ~ "spring",
+    month == "MAY" & day <15 ~ "spring",
+    month %in% c("FEB", "MAR") ~ "late winter",
+    month == "JAN" & day > 14 ~ "late winter",
+    month %in% c("NOV", "DEC") ~ "early winter",
+    month == "JAN" & day < 15 ~ "early winter"))
+
 
 # filter seasons of interest
 
@@ -77,20 +97,24 @@ animal.ids <- indata %>%
 
 indata <- indata %>%
   filter(animal_id %in% animal.ids) %>%
-  mutate(animal_id = as.factor(animal_id))
+  mutate(animal_id = as.factor(animal_id),
+         herd = "KlinseZa")
 
 
-# kernal density estimates
+# Kernal density estimates ------------------------------------------------
+
 
 seasons = as.list(unique(indata$season))
-
+hrpc = c(50, 75, 95)
 
 for (s in seasons) {
 
-  tdata <- indata %>%
+  s = seasons[1]
+
+   tdata <- indata %>%
     filter(season == s) %>%
     droplevels() %>%
-    dplyr::select(x,y, animal_id) %>%
+    dplyr::select( x, y, herd) %>%
     distinct()
 
   # Create a SpatialPointsDataFrame by defining the coordinates
@@ -99,25 +123,35 @@ for (s in seasons) {
   tdfgeo <- spTransform(tdata, CRS("+init=epsg:3005")) # Transform to UTM
 
 
-  # run KDE using href as the
-  kde  <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
+## run KDE using href as the
+# kde  <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
+#  ver95 <- getverticeshr( kde, 95)
+#  ver95.sf <- st_as_sf( ver95 )
+#  st_write(ver95.sf, file.path ("out", paste0("KlinseZa_KDE95_",s, "_href.shp")))
 
-  ver95 <- getverticeshr( kde, 95)
-  ver95.sf <- st_as_sf( ver95 )
+  kde <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
 
-  st_write(ver95.sf, file.path ("out", paste0("KlinseZa_KDE95_",s, "_href.shp")))
-
-
-  # run KDE using href as the
-  kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
-
-  ver95_lscv<- getverticeshr( kde_lscv, 95)
-  ver95_lscv.sf <- st_as_sf( ver95_lscv)
-
-  st_write(ver95_lscv.sf , file.path ("out", paste0("KlinseZa_KDE95_",s, "_lsvc.shp")))
+  saveRDS(kde, file = file.path(out_path, paste0("KlinseZa_KDE_", s, "_href_model.rds")))
 
 
-}
+  for (p in hrpc){
+    tryCatch({
+      ver <- getverticeshr(kde, p)
+      ver.sf <- st_as_sf(ver)
+      st_write(ver.sf, file.path("out", paste0("KlinseZa_KDE", p, "_", s, "_lscv.gpkg")), delete_dsn = TRUE)
+      st_write(ver.sf, file.path("out", paste0("KlinseZa_KDE", p, "_", s, "_lsvc.shp")))
+
+    },
+    error = function(e){
+      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
+    })
+
+  } # end of hrpc loop
+
+
+} # end of season loop
+
+
 
 
 # FOr the othe herd that are all the same format
@@ -172,8 +206,9 @@ for (s in seasons) {
 
   tdata <- indata %>%
     filter(season == s) %>%
+    mutate(herd = fname) %>%
     droplevels() %>%
-    dplyr::select(x,y, animal_id) %>%
+    dplyr::select(x,y, herd) %>%
     distinct()
 
   # Create a SpatialPointsDataFrame by defining the coordinates
@@ -182,26 +217,39 @@ for (s in seasons) {
   tdfgeo <- spTransform(tdata, CRS("+init=epsg:3005")) # Transform to UTM
 
 
-  # run KDE using href as the
+ ## run KDE using href as the
  #  kde  <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
-
  #  ver95 <- getverticeshr( kde, 95)
  #  ver95.sf <- st_as_sf( ver95 )
-
   #st_write(ver95.sf, file.path ("out", paste0(fname, "_KDE95_",s, "_href.shp")), overwrite = TRUE)
 
-
   # run KDE using href as the
-  kde_lscv  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
-
-  ver95_lscv<- getverticeshr( kde_lscv, 50)
-  ver95_lscv.sf <- st_as_sf( ver95_lscv)
-
-  st_write(ver95_lscv.sf , file.path ("out", paste0( fname, "_KDE50_",s, "_lsvc.shp")), overwrite = TRUE)
+  kde  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
 
 
- }
+  saveRDS(kde, file = file.path(out_path, paste0(fname, "_kde", p, "_", s, "_href_model.rds")))
+  #kde_href <- kde1$BurntPine@h[[1]]
 
-}
+  for (p in hrpc){
+    tryCatch({
+      ver <- getverticeshr(kde, p)
+      ver.sf <- st_as_sf(ver)
+      st_write(ver.sf, file.path("out", paste0(fname, "_KDE", p, "_", s, "_lscv.gpkg")), delete_dsn = TRUE)
+      st_write(ver.sf, file.path("out", paste0(fname, "_KDE", p, "_", s, "_lsvc.shp")))
+
+    },
+    error = function(e){
+      print( paste0("unable to generate vertices for ", p, "% vertices for ", s))
+    })
+
+  }
+
+
+} # end of season loop
+
+
+} # end of herd loop
+
+
 
 
