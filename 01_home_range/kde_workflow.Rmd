@@ -188,6 +188,7 @@ the grid and extent parameters can be adjusted (https://mran.microsoft.com/snaps
 
 
 ```{r run kde, eval = TRUE, cache = FALSE}
+
 seasons = as.list(unique(indata$season))
 hrpc = c(50, 75, 95)
 
@@ -207,7 +208,7 @@ for (s in seasons) {
 
   kde <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
 
-  saveRDS(kde, file = file.path(out_path, paste0("KlinseZa_KDE", p, "_", s, "_href_model.rds")))
+  saveRDS(kde, file = file.path(out_path, paste0("KlinseZa_KDE_", s, "_href_model.rds")))
 
   
  for (p in hrpc){
@@ -246,6 +247,8 @@ for (s in seasons) {
 
 
 ```
+
+Note the warning messages given above indicate which seasons a kde was was not able to generated for.
 
 
 
