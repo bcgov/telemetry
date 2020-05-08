@@ -25,7 +25,9 @@ output: word_document
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
 
 ```
 
@@ -79,7 +81,6 @@ Set up your path to your data folder.
 
 data_path <- file.path("../data")
 out_path <- file.path("../out")
-
 
 ```
 
@@ -162,7 +163,7 @@ ggplot(counts.per.season, aes(x = season, y = count)) +
 # check with Agnes if there is any minimum number. 
 ```
 
-```{r, include=FALSE}
+```{r, include = FALSE}
 ## this is not implemented but saving as a place holder if required
 
 # filter animal 1d with > 50 counts
@@ -255,7 +256,7 @@ files <- list.files(data_path, pattern = "20191231.xlsx$")
 
 for(f in files){
 
- # f = files[1]
+ # f = files[2]
   fname = gsub("_20191231.xlsx", "", f)
 
 # import all sheets into single file with name of year
@@ -325,7 +326,7 @@ hrpc = c(50, 75, 95)
 
 for (s in seasons) {
 
- # s = seasons[[2]]
+#  s = seasons[[2]]
 
   tdata <- indata %>%
     filter(season == s) %>%
@@ -336,17 +337,25 @@ for (s in seasons) {
 
   # Create a SpatialPointsDataFrame by defining the coordinates
   coordinates(tdata) <- c("x", "y")
-  proj4string(tdata) <- CRS( "+proj=utm +zone=10 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" )
-  tdfgeo <- spTransform(tdata, CRS("+init=epsg:3005")) # Transform to UTM
+  proj4string(tdata) <- CRS("+init=epsg:3005")
+  tdfgeo <- tdata # Transform to UTM
 
   kde <- kernelUD(tdfgeo, h = "href", kern = c("bivnorm"), grid = 500, extent = 2)
-
+ 
+  saveRDS(kde, file = file.path(out_path, paste0(fname, "_kde", p, "_", s, "_href_model.rds")))
+  #kde_href <- kde1$BurntPine@h[[1]]
+  
+  # kde1 <- readRDS(file = file.path(out_path, paste0(fname, "_kde", p, "_", s, "_href_model.rds"))) 
+ 
+  # plotLSCV(kde)
+  
  for (p in hrpc){
+    # p <- hrpc[1]
      tryCatch({
       ver <- getverticeshr(kde, p)
       ver.sf <- st_as_sf(ver)
     st_write(ver.sf, file.path("../out", paste0(fname, "_KDE", p, "_", s, "_href.gpkg")), delete_dsn = TRUE)
-      
+    st_write(ver.sf, file.path("../out", paste0(fname, "_KDE", p, "_", s, "_href.shp")), delete_dsn = TRUE)
       },
       error = function(e){
       print(paste0("unable to generate vertices for ", p, "% vertices for ", s))
