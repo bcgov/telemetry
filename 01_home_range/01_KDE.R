@@ -109,7 +109,7 @@ hrpc = c(50, 75, 95)
 
 for (s in seasons) {
 
-  s = seasons[1]
+  #s = seasons[1]
 
    tdata <- indata %>%
     filter(season == s) %>%
@@ -154,14 +154,14 @@ for (s in seasons) {
 
 
 
-# FOr the othe herd that are all the same format
+# Other herd kde's --------------------------------------------------------
 
 
 files <- list.files(data_path, pattern = "20191231.xlsx$")
 
 for( f in files){
 
-  f = files[2]
+ # f = files[2]
   fname = gsub("_20191231.xlsx", "", f)
 
 # import all sheets into single file with name of year
@@ -202,7 +202,7 @@ seasons = as.list(unique(indata$season))
 
 for (s in seasons) {
 
-  s = seasons[[2]]
+ # s = seasons[[2]]
 
   tdata <- indata %>%
     filter(season == s) %>%
@@ -213,8 +213,8 @@ for (s in seasons) {
 
   # Create a SpatialPointsDataFrame by defining the coordinates
   coordinates(tdata) <- c("x", "y")
-  proj4string(tdata) <- CRS( "+proj=aea +lat_1=50 +lat_2=58.5 +lat_0=45 +lon_0=-126 +x_0=1000000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs " )
-  tdfgeo <- spTransform(tdata, CRS("+init=epsg:3005")) # Transform to UTM
+  proj4string(tdata) <- CRS("+init=epsg:3005"))
+  tdfgeo <- tdata
 
 
  ## run KDE using href as the
