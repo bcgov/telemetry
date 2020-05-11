@@ -109,7 +109,7 @@ hrpc = c(50, 75, 95)
 
 for (s in seasons) {
 
-  #s = seasons[1]
+  #s = seasons[3]
 
    tdata <- indata %>%
     filter(season == s) %>%
@@ -138,8 +138,8 @@ for (s in seasons) {
     tryCatch({
       ver <- getverticeshr(kde, p)
       ver.sf <- st_as_sf(ver)
-      st_write(ver.sf, file.path("out", paste0("KlinseZa_KDE", p, "_", s, "_lscv.gpkg")), delete_dsn = TRUE)
-      st_write(ver.sf, file.path("out", paste0("KlinseZa_KDE", p, "_", s, "_lsvc.shp")))
+      st_write(ver.sf, file.path(out_path, paste0("KlinseZa_KDE", p, "_", s, "_lscv.gpkg")), delete_dsn = TRUE)
+      st_write(ver.sf, file.path(out_path, paste0("KlinseZa_KDE", p, "_", s, "_lsvc.shp")))
 
     },
     error = function(e){
@@ -161,7 +161,7 @@ files <- list.files(data_path, pattern = "20191231.xlsx$")
 
 for( f in files){
 
- # f = files[2]
+  #f = files[1]
   fname = gsub("_20191231.xlsx", "", f)
 
 # import all sheets into single file with name of year
@@ -169,7 +169,7 @@ indata <- read_xlsx(file.path(data_path, f)) %>%
   rename(x = AlbersX, y = AlbersY) %>%
   dplyr::select(Animal_ID, x, y, Year,	Month,	Day) %>%
   rename_all(.funs = tolower) %>%
-  dplyr::filter(year > max(indata$year)-5) %>%
+  #dplyr::filter(year > max(indata$year)-5) %>%
   mutate(season = case_when(
     month == 4 ~ "spring",
     month == 5 & day <15 ~ "spring",
@@ -202,7 +202,7 @@ seasons = as.list(unique(indata$season))
 
 for (s in seasons) {
 
- # s = seasons[[2]]
+  #s = seasons[[2]]
 
   tdata <- indata %>%
     filter(season == s) %>%
@@ -213,7 +213,7 @@ for (s in seasons) {
 
   # Create a SpatialPointsDataFrame by defining the coordinates
   coordinates(tdata) <- c("x", "y")
-  proj4string(tdata) <- CRS("+init=epsg:3005"))
+  proj4string(tdata) <- CRS("+init=epsg:3005")
   tdfgeo <- tdata
 
 
@@ -226,7 +226,6 @@ for (s in seasons) {
   # run KDE using href as the
   kde  <- kernelUD(tdfgeo, h = "LSCV", kern = c("bivnorm"), grid = 500, extent = 2)
 
-
   saveRDS(kde, file = file.path(out_path, paste0(fname, "_kde", p, "_", s, "_href_model.rds")))
   #kde_href <- kde1$BurntPine@h[[1]]
 
@@ -234,8 +233,8 @@ for (s in seasons) {
     tryCatch({
       ver <- getverticeshr(kde, p)
       ver.sf <- st_as_sf(ver)
-      st_write(ver.sf, file.path("out", paste0(fname, "_KDE", p, "_", s, "_lscv.gpkg")), delete_dsn = TRUE)
-      st_write(ver.sf, file.path("out", paste0(fname, "_KDE", p, "_", s, "_lsvc.shp")))
+      st_write(ver.sf, file.path(out_path, paste0(fname, "_KDE", p, "_", s, "_lscv.gpkg")), delete_dsn = TRUE)
+      st_write(ver.sf, file.path(out_path, paste0(fname, "_KDE", p, "_", s, "_lsvc.shp")))
 
     },
     error = function(e){
@@ -252,4 +251,21 @@ for (s in seasons) {
 
 
 
+
+
+
+# Model checks for convergence --------------------------------------------
+
+
+models <- list.files(out_path, pattern = ".rds$", full.name = TRUE)
+
+for( m in models){
+
+ # m <- models[1]
+
+  moi <- readRDS(m)
+
+  print(m)
+  print(moi)
+}
 
