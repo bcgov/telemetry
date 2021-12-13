@@ -5,7 +5,7 @@ telemetry
 =========
 
 ### Usage
-[![img](https://img.shields.io/badge/Lifecycle-Experimental-339999)](https://github.com/bcgov/repomountie/blob/master/doc/lifecycle-badges.md)
+[![Lifecycle:Dormant](https://img.shields.io/badge/Lifecycle-Dormant-ff7f2a)](<Redirect-URL>)
 
 This repo is a place to store various scripts to analyse and visualise
 telemetry data. It is currently a work in progress to enable
